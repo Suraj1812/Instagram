@@ -1,0 +1,60 @@
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAuthStore } from '../store/authStore';
+import { useOnboardingStore } from '../store/onboardingStore';
+import { useThemeStore, useTheme } from '../theme/useTheme';
+import { AuthNavigator } from './AuthNavigator';
+import { MainTabNavigator } from './MainTabNavigator';
+import { OnboardingScreen } from '../screens/Onboarding/OnboardingScreen';
+import { seedIfNeeded } from '../services/seedData';
+import { pruneExpiredStories } from '../db/repositories/storyRepository';
+
+const Stack = createNativeStackNavigator();
+
+export function RootNavigator() {
+  const { session, isBootstrapping, bootstrap } = useAuthStore();
+  const { completed: onboarded, hydrate: hydrateOnboarding } = useOnboardingStore();
+  const { mode, hydrate: hydrateTheme } = useThemeStore();
+  const { colors } = useTheme();
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      await seedIfNeeded();          // populate demo network on first-ever launch
+      await pruneExpiredStories();   // housekeeping on every cold start
+      setSeeded(true);
+      await hydrateTheme();
+      await bootstrap();
+      await hydrateOnboarding();
+    })();
+  }, [bootstrap, hydrateTheme, hydrateOnboarding]);
+
+  if (!seeded || isBootstrapping || onboarded === null) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#fff" />
+      </View>
+    );
+  }
+
+  const navTheme = {
+    ...(mode === 'dark' ? DarkTheme : DefaultTheme),
+    colors: { ...(mode === 'dark' ? DarkTheme.colors : DefaultTheme.colors), background: colors.bg, card: colors.bg, text: colors.text, border: colors.border },
+  };
+
+  return (
+    <NavigationContainer theme={navTheme}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!onboarded ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : !session ? (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        ) : (
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

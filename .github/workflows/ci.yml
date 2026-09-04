@@ -1,0 +1,78 @@
+name: CI
+
+# Runs the exact verification chain used to build this project: install,
+# typecheck, validate the Expo config, generate native projects for both
+# platforms, and do a full Metro bundle export. If any of these fail, the
+# app would fail to build for a real user too — this is not a formality.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Type-check (strict, no unused code)
+        run: npx tsc --noEmit --skipLibCheck --noUnusedLocals --noUnusedParameters
+
+  expo-config:
+    name: Expo config & native prebuild
+    runs-on: ubuntu-latest
+    needs: typecheck
+    strategy:
+      matrix:
+        platform: [android, ios]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Validate app.json / config plugins resolve
+        run: npx expo config --json --full > /dev/null
+
+      - name: Generate native project (${{ matrix.platform }})
+        run: npx expo prebuild --platform ${{ matrix.platform }} --no-install
+
+  bundle:
+    name: Metro bundle export
+    runs-on: ubuntu-latest
+    needs: typecheck
+    strategy:
+      matrix:
+        platform: [android, ios]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Export JS bundle (${{ matrix.platform }})
+        run: npx expo export --platform ${{ matrix.platform }}

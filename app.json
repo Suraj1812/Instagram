@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "SwiftGram",
+    "slug": "swiftgram",
+    "scheme": "swiftgram",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "backgroundColor": "#0a0a0a",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.swiftgram.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "SwiftGram needs access to your photos to let you post images and videos. Nothing leaves this device.",
+        "NSCameraUsageDescription": "SwiftGram needs camera access to let you capture photos and videos for posts, stories, and video calls.",
+        "NSMicrophoneUsageDescription": "SwiftGram needs microphone access for voice and video calls."
+      }
+    },
+    "android": {
+      "package": "com.swiftgram.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_NETWORK_STATE",
+        "INTERNET",
+        "BLUETOOTH"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SwiftGram needs camera access to take photos, record videos, scan call connection codes, and make video calls.",
+          "microphonePermission": "SwiftGram needs microphone access to record videos and for voice/video calls."
+        }
+      ]
+    ]
+  }
+}

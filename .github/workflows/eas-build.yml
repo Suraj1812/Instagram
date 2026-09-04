@@ -1,0 +1,49 @@
+name: EAS Build (Android APK)
+
+# Builds a real installable .apk via Expo's cloud build service. This job
+# CANNOT run until you add one repository secret yourself — I have no way to
+# create it for you, since it's tied to your personal Expo account:
+#
+#   1. Create a free account at https://expo.dev if you don't have one.
+#   2. Run `npx eas login` locally once, then `npx eas whoami` to confirm.
+#   3. Generate a token: https://expo.dev/accounts/[your-account]/settings/access-tokens
+#   4. In this GitHub repo: Settings -> Secrets and variables -> Actions ->
+#      "New repository secret" -> name it EXPO_TOKEN -> paste the token.
+#
+# Until that secret exists, this workflow will fail at the "eas build" step
+# with an authentication error — that's expected, not a bug in the workflow.
+on:
+  workflow_dispatch: {}   # manual trigger from the Actions tab
+  push:
+    tags:
+      - 'v*'              # also runs automatically when you push a version tag
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Set up EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK (preview profile)
+        run: npx eas build --platform android --profile preview --non-interactive --no-wait
+
+      # --no-wait queues the build on Expo's servers and returns immediately
+      # rather than tying up a GitHub Actions runner for the ~10-15 minutes
+      # a build takes. Track progress and grab the download link at
+      # https://expo.dev/accounts/[your-account]/projects/swiftgram/builds
