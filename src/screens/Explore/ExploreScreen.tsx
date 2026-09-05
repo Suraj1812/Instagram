@@ -103,7 +103,7 @@ export function ExploreScreen({ navigation }: any) {
             </View>
           ) : null
         }
-        ListEmptyComponent={loadError ? <EmptyState icon="⚠️" title="Explore is unavailable" subtitle="Pull down to try again." /> : <EmptyState icon="🔎" title="Nothing to explore yet" subtitle="Once more accounts post, they'll show up here." />}
+        ListEmptyComponent={loadError ? <EmptyState icon="alert-circle-outline" title="Explore is unavailable" subtitle="Pull down to try again." /> : <EmptyState icon="compass-outline" title="Nothing to explore yet" subtitle="Once more accounts post, they'll show up here." />}
         renderItem={({ item }) => (
           <Pressable
             style={{ width: CELL, height: CELL, margin: GUTTER / 2 }}

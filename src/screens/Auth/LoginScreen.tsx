@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, Pressable, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/Input';
+import { PasswordInput } from '../../components/PasswordInput';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../theme/useTheme';
@@ -36,7 +37,7 @@ export function LoginScreen({ navigation }: any) {
         />
         <Text style={[styles.tagline, { color: colors.textMuted }]}>Log in to your Instagram account</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
-        <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />
+        <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} wrapperStyle={styles.field} />
         <Button label="Log in" onPress={onSubmit} loading={loading} disabled={!username || !password} style={{ marginTop: 8 }} />
         <Pressable onPress={() => navigation.navigate('Signup')} style={{ marginTop: 20 }}>
           <Text style={[styles.link, { color: colors.accent }]}>Don't have an account? Create one</Text>

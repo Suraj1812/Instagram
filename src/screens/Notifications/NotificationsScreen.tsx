@@ -53,7 +53,7 @@ export function NotificationsScreen({ navigation }: any) {
       {loading ? <LoadingState label="Loading notifications…" /> : <FlatList
         data={items}
         keyExtractor={(n) => n.id}
-        ListEmptyComponent={<EmptyState icon="🔔" title="No notifications yet" subtitle="Likes, comments, and new followers will show up here." />}
+        ListEmptyComponent={<EmptyState icon="notifications-outline" title="No notifications yet" subtitle="Likes, comments, and new followers will show up here." />}
         renderItem={({ item }) => (
           <Pressable style={[styles.row, !item.isRead && { backgroundColor: colors.surface }]} onPress={() => onPress(item)}>
             <Avatar path={item.actor.avatarPath} size={40} />

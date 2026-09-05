@@ -27,7 +27,7 @@ export function FollowersScreen({ route, navigation }: any) {
       {loading ? <LoadingState label={`Loading ${mode}…`} /> : <FlatList
         data={list}
         keyExtractor={(a) => a.id}
-        ListEmptyComponent={<EmptyState icon="👥" title={mode === 'followers' ? 'No followers yet' : 'Not following anyone yet'} />}
+        ListEmptyComponent={<EmptyState icon="people-outline" title={mode === 'followers' ? 'No followers yet' : 'Not following anyone yet'} />}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => navigation.navigate('Profile', { username: item.username })}>
             <Avatar path={item.avatarPath} size={44} />

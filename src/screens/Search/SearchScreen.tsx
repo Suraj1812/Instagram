@@ -85,7 +85,7 @@ export function SearchScreen({ navigation }: any) {
       <FlatList
         data={showingResults ? results : suggested.map((a) => ({ id: a.id, type: 'user' as const, label: a.username, avatarPath: a.avatarPath }))}
         keyExtractor={(r) => `${r.type}:${r.id}`}
-        ListEmptyComponent={showingResults && !searching ? <EmptyState icon="🔍" title="No results" subtitle="Try a different search term." /> : (!showingResults && loadingSuggestions ? <LoadingState compact label="Finding people to follow…" /> : null)}
+        ListEmptyComponent={showingResults && !searching ? <EmptyState icon="search-outline" title="No results" subtitle="Try a different search term." /> : (!showingResults && loadingSuggestions ? <LoadingState compact label="Finding people to follow…" /> : null)}
         ListHeaderComponent={showingResults && searching ? <LoadingState compact label="Searching…" /> : (!showingResults && suggested.length > 0 ? (
           <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Suggested accounts</Text>
         ) : null)}

@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LocalWebRTCCall, CallKind } from '../../services/webrtcCall';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { ChevronLeftIcon, QrCodeIcon } from '../../components/icons';
+import { ChevronLeftIcon, QrCodeIcon, MicIcon, VideoCameraIcon } from '../../components/icons';
 import { CallCodeQr, CallCodeScanner } from '../../components/CallCodeQr';
 import { useTheme } from '../../theme/useTheme';
 
@@ -118,8 +118,8 @@ export function CallSetupScreen({ route, navigation }: any) {
             </Text>
             <Text style={[styles.sectionLabel, { color: colors.text }]}>Start a call</Text>
             <View style={styles.row}>
-              <Button label="🎤 Voice" variant="secondary" onPress={() => startOutgoingCall('audio')} loading={busy} style={{ flex: 1 }} />
-              <Button label="📹 Video" variant="primary" onPress={() => startOutgoingCall('video')} loading={busy} style={{ flex: 1 }} />
+              <Button label="Voice" icon={<MicIcon size={18} color={colors.text} />} variant="secondary" onPress={() => startOutgoingCall('audio')} loading={busy} style={{ flex: 1 }} />
+              <Button label="Video" icon={<VideoCameraIcon size={18} color="#fff" />} variant="primary" onPress={() => startOutgoingCall('video')} loading={busy} style={{ flex: 1 }} />
             </View>
             <Text style={[styles.sectionLabel, { color: colors.text, marginTop: 24 }]}>Join a call</Text>
             <Text style={[styles.explainer, { color: colors.textMuted }]}>Received a code from someone? Paste it here.</Text>
@@ -172,8 +172,8 @@ export function CallSetupScreen({ route, navigation }: any) {
               <Text style={{ color: colors.accent, fontWeight: '600', marginLeft: 6 }}>Scan their QR code instead</Text>
             </Pressable>
             <View style={styles.row}>
-              <Button label="🎤 Answer with voice" variant="secondary" onPress={() => submitOfferCode('audio')} loading={busy} style={{ flex: 1 }} disabled={!pastedCode.trim()} />
-              <Button label="📹 Answer with video" variant="primary" onPress={() => submitOfferCode('video')} loading={busy} style={{ flex: 1 }} disabled={!pastedCode.trim()} />
+              <Button label="Answer with voice" icon={<MicIcon size={18} color={colors.text} />} variant="secondary" onPress={() => submitOfferCode('audio')} loading={busy} style={{ flex: 1 }} disabled={!pastedCode.trim()} />
+              <Button label="Answer with video" icon={<VideoCameraIcon size={18} color="#fff" />} variant="primary" onPress={() => submitOfferCode('video')} loading={busy} style={{ flex: 1 }} disabled={!pastedCode.trim()} />
             </View>
           </>
         )}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, Pressable, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/Input';
+import { PasswordInput } from '../../components/PasswordInput';
 import { Button } from '../../components/Button';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../theme/useTheme';
@@ -32,7 +33,7 @@ export function SignupScreen({ navigation }: any) {
         <Text style={[styles.tagline, { color: colors.textMuted }]}>Your account and content sync securely across devices.</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
         <Input placeholder="Display name (optional)" value={displayName} onChangeText={setDisplayName} style={styles.field} />
-        <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />
+        <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} wrapperStyle={styles.field} />
         <Button label="Create account" onPress={onSubmit} loading={loading} disabled={!username || password.length < 4} style={{ marginTop: 8 }} />
         <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
           <Text style={[styles.link, { color: colors.accent }]}>Already have an account? Log in</Text>

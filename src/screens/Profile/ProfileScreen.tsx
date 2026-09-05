@@ -68,7 +68,7 @@ export function ProfileScreen({ route, navigation }: any) {
     }
   };
 
-  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }}>{loading ? <LoadingState label="Loading profile…" /> : <EmptyState icon="⚠️" title="Profile unavailable" subtitle={loadError ?? 'Try again in a moment.'} />}</View>;
+  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }}>{loading ? <LoadingState label="Loading profile…" /> : <EmptyState icon="alert-circle-outline" title="Profile unavailable" subtitle={loadError ?? 'Try again in a moment.'} />}</View>;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -128,7 +128,7 @@ export function ProfileScreen({ route, navigation }: any) {
         numColumns={3}
         estimatedItemSize={CELL}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={<EmptyState icon={tab === 'reels' ? '🎬' : '📷'} title={tab === 'reels' ? 'No reels yet' : 'No posts yet'} />}
+        ListEmptyComponent={<EmptyState icon={tab === 'reels' ? 'play-circle-outline' : 'images-outline'} title={tab === 'reels' ? 'No reels yet' : 'No posts yet'} />}
         renderItem={({ item }) => (
           <Pressable style={{ width: CELL, height: CELL }} onPress={() => navigation.navigate('PostDetail', { postId: item.id })}>
             <LocalImage path={item.media[0]?.thumbPath ?? item.media[0]?.path} style={{ flex: 1, margin: 1 }} />

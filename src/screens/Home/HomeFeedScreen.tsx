@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, RefreshControl, Text, Pressable, Image, Alert } from 'react-native';
+import { View, StyleSheet, RefreshControl, Text, Pressable, Image, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFeedStore } from '../../store/feedStore';
@@ -12,6 +12,7 @@ import { useTheme } from '../../theme/useTheme';
 import { getActiveStoryGroups } from '../../db/repositories/storyRepository';
 import { getSuggestedAccounts, toggleFollow } from '../../db/repositories/userRepository';
 import { SuggestedAccounts, SuggestedAccountsHeader } from '../../components/SuggestedAccounts';
+import { LoadingState } from '../../components/LoadingState';
 import type { Post, StoryGroup } from '../../types';
 import type { Author } from '../../types';
 
@@ -70,7 +71,7 @@ export function HomeFeedScreen({ navigation }: any) {
   );
 
   if (loading) {
-    return <View style={[styles.center, { backgroundColor: colors.bg }]}><ActivityIndicator color={colors.text} /></View>;
+    return <View style={[styles.center, { backgroundColor: colors.bg }]}><LoadingState label="Loading your feed…" /></View>;
   }
 
   return (
@@ -117,7 +118,7 @@ export function HomeFeedScreen({ navigation }: any) {
             )}
           </View>
         }
-        ListEmptyComponent={error ? <EmptyState icon="⚠️" title="Could not load your feed" subtitle="Pull down to try again." /> : <EmptyState icon="📸" title="Your feed is empty" subtitle="Follow a few accounts from Explore to see their posts here." />}
+        ListEmptyComponent={error ? <EmptyState icon="alert-circle-outline" title="Could not load your feed" subtitle="Pull down to try again." /> : <EmptyState icon="images-outline" title="Your feed is empty" subtitle="Follow a few accounts from Explore to see their posts here." />}
         ListFooterComponent={
           !hasMore && posts.length > 0 ? (
             <Text style={[styles.endOfFeed, { color: colors.textMuted }]}>You're all caught up ✓</Text>

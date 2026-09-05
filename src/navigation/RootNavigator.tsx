@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
@@ -9,6 +9,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { OnboardingScreen } from '../screens/Onboarding/OnboardingScreen';
 import { pruneExpiredStories } from '../db/repositories/storyRepository';
+import { LoadingState } from '../components/LoadingState';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +31,7 @@ export function RootNavigator() {
   if (isBootstrapping || onboarded === null) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.accent} />
+        <LoadingState label="Starting Instagram…" />
       </View>
     );
   }

@@ -45,7 +45,7 @@ export function MessagesListScreen({ navigation }: any) {
       {loading ? <LoadingState label="Loading messages…" /> : <FlatList
         data={conversations}
         keyExtractor={(c) => c.id}
-        ListEmptyComponent={<EmptyState icon="💬" title="No messages yet" subtitle="Message someone from their profile to start a conversation." />}
+        ListEmptyComponent={<EmptyState icon="chatbubbles-outline" title="No messages yet" subtitle="Message someone from their profile to start a conversation." />}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => navigation.navigate('Chat', { conversationId: item.id, title: item.title })}>
             <Avatar path={item.otherUser?.avatarPath} size={48} />

@@ -113,7 +113,7 @@ export function ReelsScreen({ navigation }: any) {
   if (reels.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
-        <EmptyState icon="🎬" title="No reels yet" subtitle="Reels you or people you follow post will show up here." />
+        <EmptyState icon="play-circle-outline" title="No reels yet" subtitle="Reels you or people you follow post will show up here." />
       </SafeAreaView>
     );
   }

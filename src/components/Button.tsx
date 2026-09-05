@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle, StyleProp } from 'react-native';
+import { Pressable, Text, StyleSheet, ActivityIndicator, View, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
+  icon?: React.ReactNode;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading, style, compact }: Props) {
+export function Button({ label, onPress, variant = 'primary', disabled, loading, style, compact, icon }: Props) {
   const { colors, radii } = useTheme();
 
   const bg = {
@@ -35,7 +36,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
         style,
       ]}
     >
-      {loading ? <ActivityIndicator color={textColor} /> : <Text style={[styles.label, { color: textColor }]}>{label}</Text>}
+      {loading ? <ActivityIndicator color={textColor} /> : <View style={styles.content}>{icon}{<Text style={[styles.label, { color: textColor }]}>{label}</Text>}</View>}
     </Pressable>
   );
 }
@@ -44,4 +45,5 @@ const styles = StyleSheet.create({
   base: { paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   compact: { paddingVertical: 7, paddingHorizontal: 12 },
   label: { fontWeight: '700', fontSize: 14 },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
 });
