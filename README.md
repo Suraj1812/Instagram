@@ -1,4 +1,4 @@
-# SwiftGram (local-only edition)
+# Instagram (local-only edition)
 
 [![CI](https://github.com/Suraj1812/Instagram/actions/workflows/ci.yml/badge.svg)](https://github.com/Suraj1812/Instagram/actions/workflows/ci.yml)
 [![EAS Build](https://github.com/Suraj1812/Instagram/actions/workflows/eas-build.yml/badge.svg)](https://github.com/Suraj1812/Instagram/actions/workflows/eas-build.yml)
