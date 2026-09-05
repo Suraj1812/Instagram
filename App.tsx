@@ -11,13 +11,19 @@ import { useTheme } from './src/theme/useTheme';
 
 export default function App() {
   const { mode } = useTheme();
+  const statusBarStyle = mode === 'dark' ? 'light-content' : 'dark-content';
+  const statusBarBackground = mode === 'dark' ? '#000000' : '#ffffff';
   // No local-DB handshake to wait on anymore — RootNavigator's own
   // bootstrap (restoring the Supabase session) is the only async gate now,
   // and it renders its own loading state.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          barStyle={statusBarStyle}
+          backgroundColor={statusBarBackground}
+          translucent={false}
+        />
         <RootNavigator />
       </SafeAreaProvider>
     </GestureHandlerRootView>
