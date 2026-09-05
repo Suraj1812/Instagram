@@ -24,6 +24,7 @@
     },
     "android": {
       "package": "com.swiftgram.app",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#0a0a0a"
@@ -51,6 +52,7 @@
         }
       ],
       "./plugins/withAndroidDependencies",
+      "./plugins/withGeneratedAndroidIcon",
       [
         "expo-camera",
         {
