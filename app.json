@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SwiftGram",
+    "name": "Instagram",
     "slug": "swiftgram",
     "scheme": "swiftgram",
     "version": "1.0.0",
@@ -17,9 +17,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.swiftgram.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "SwiftGram needs access to your photos to let you post images and videos. Nothing leaves this device.",
-        "NSCameraUsageDescription": "SwiftGram needs camera access to let you capture photos and videos for posts, stories, and video calls.",
-        "NSMicrophoneUsageDescription": "SwiftGram needs microphone access for voice and video calls."
+        "NSPhotoLibraryUsageDescription": "Instagram needs access to your photos to let you post images and videos. Nothing leaves this device.",
+        "NSCameraUsageDescription": "Instagram needs camera access to let you capture photos and videos for posts, stories, and video calls.",
+        "NSMicrophoneUsageDescription": "Instagram needs microphone access for voice and video calls."
       }
     },
     "android": {
@@ -54,8 +54,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "SwiftGram needs camera access to take photos, record videos, scan call connection codes, and make video calls.",
-          "microphonePermission": "SwiftGram needs microphone access to record videos and for voice/video calls."
+          "cameraPermission": "Instagram needs camera access to take photos, record videos, scan call connection codes, and make video calls.",
+          "microphonePermission": "Instagram needs microphone access to record videos and for voice/video calls."
         }
       ]
     ],

@@ -8,7 +8,7 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 import { useTheme } from '../../theme/useTheme';
 
 const SLIDES = [
-  { emoji: '📱', title: 'Welcome to SwiftGram', body: 'Share moments with a feed that opens instantly and never waits on a spinner.' },
+  { emoji: '📱', title: 'Welcome to Instagram', body: 'Share moments with a feed that opens instantly and never waits on a spinner.' },
   { emoji: '🔒', title: 'Everything stays on your device', body: 'No servers, no accounts in the cloud. Your posts, photos, and messages live only on this phone.' },
   { emoji: '⚡️', title: 'Built for speed', body: 'Local storage means your feed, stories, and reels load instantly — online or off.' },
 ];

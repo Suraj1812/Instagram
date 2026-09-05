@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, RefreshControl, Text, Pressable } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, RefreshControl, Text, Pressable, Image } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFeedStore } from '../../store/feedStore';
@@ -54,7 +54,12 @@ export function HomeFeedScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.topBar, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.wordmark, { color: colors.text }]}>SwiftGram</Text>
+        <Image
+          source={require('../../../assets/instagram-wordmark.png')}
+          style={[styles.wordmarkImage, { tintColor: colors.text }]}
+          resizeMode="contain"
+          accessibilityLabel="Instagram"
+        />
         <View style={{ flexDirection: 'row', gap: 20 }}>
           <Pressable onPress={() => navigation.navigate('Notifications')} hitSlop={10}>
             <HeartIcon size={26} color={colors.text} />
@@ -99,7 +104,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  wordmark: { fontSize: 26, fontWeight: '600', fontStyle: 'italic', letterSpacing: 0.3 },
+  wordmarkImage: { width: 132, height: 38 },
   dmIcon: { fontSize: 22 },
   endOfFeed: { textAlign: 'center', paddingVertical: 24, fontSize: 13 },
 });

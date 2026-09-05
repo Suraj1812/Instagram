@@ -78,7 +78,7 @@ export function SettingsScreen({ navigation }: any) {
 
         <SectionLabel text="About" />
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          SwiftGram is powered by Supabase — your account, posts, and messages sync across every device you log into.
+          Instagram is powered by Supabase — your account, posts, and messages sync across every device you log into.
         </Text>
       </ScrollView>
     </SafeAreaView>

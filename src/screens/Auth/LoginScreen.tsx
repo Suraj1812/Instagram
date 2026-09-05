@@ -28,7 +28,12 @@ export function LoginScreen({ navigation }: any) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
         <Image source={require('../../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
-        <Text style={[styles.logo, { color: colors.text }]}>SwiftGram</Text>
+        <Image
+          source={require('../../../assets/instagram-wordmark.png')}
+          style={[styles.wordmarkImage, { tintColor: colors.text }]}
+          resizeMode="contain"
+          accessibilityLabel="Instagram"
+        />
         <Text style={[styles.tagline, { color: colors.textMuted }]}>Log in to the account stored on this device</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
         <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />
@@ -44,7 +49,7 @@ export function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
   logoImage: { width: 88, height: 88, alignSelf: 'center', marginBottom: 16 },
-  logo: { fontSize: 34, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
+  wordmarkImage: { width: 230, height: 64, alignSelf: 'center', marginBottom: 8 },
   tagline: { fontSize: 13, textAlign: 'center', marginBottom: 32 },
   field: { marginBottom: 12 },
   link: { textAlign: 'center', fontSize: 13, fontWeight: '600' },
