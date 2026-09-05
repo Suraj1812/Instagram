@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMediaStorageUsage, clearAllMedia } from '../../services/mediaStorage';
-import { resetDatabase } from '../../db/database';
+import { supabase } from '../../services/supabaseClient';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore, useTheme } from '../../theme/useTheme';
 import { ChevronLeftIcon } from '../../components/icons';
@@ -22,17 +22,21 @@ export function SettingsScreen({ navigation }: any) {
   const loadUsage = useCallback(() => { getMediaStorageUsage().then(setUsage); }, []);
   useEffect(() => { loadUsage(); }, [loadUsage]);
 
-  const onResetData = () => {
+  const onDeleteAccount = () => {
     Alert.alert(
-      'Reset all app data',
-      'This permanently deletes every local account, post, story, message, and photo on this device. This cannot be undone.',
+      'Delete your account',
+      'This permanently deletes your account and everything tied to it — your posts, stories, messages, likes, and follows. Other accounts and their content are unaffected. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete everything', style: 'destructive',
+          text: 'Delete my account', style: 'destructive',
           onPress: async () => {
+            const { error } = await supabase.rpc('delete_own_account');
+            if (error) {
+              Alert.alert('Something went wrong', error.message);
+              return;
+            }
             await clearAllMedia();
-            await resetDatabase();
             await logout();
           },
         },
@@ -57,24 +61,24 @@ export function SettingsScreen({ navigation }: any) {
 
         <SectionLabel text="Storage" />
         <Row>
-          <Text style={{ color: colors.text }}>Media on this device</Text>
+          <Text style={{ color: colors.text }}>Local cache on this device</Text>
           <Text style={{ color: colors.textMuted }}>{formatBytes(usage)}</Text>
         </Row>
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          Every photo and video you post or save is stored directly on this device. There is no cloud backup — if you delete the app, this media is gone.
+          Your photos and videos are stored in the cloud (Supabase Storage), so they follow your account across devices. This is just the local cache Expo keeps for faster loading.
         </Text>
 
         <SectionLabel text="Account" />
         <Pressable style={styles.rowPressable} onPress={logout}>
           <Text style={{ color: colors.text }}>Log out</Text>
         </Pressable>
-        <Pressable style={styles.rowPressable} onPress={onResetData}>
-          <Text style={{ color: colors.danger }}>Reset all app data</Text>
+        <Pressable style={styles.rowPressable} onPress={onDeleteAccount}>
+          <Text style={{ color: colors.danger }}>Delete my account</Text>
         </Pressable>
 
         <SectionLabel text="About" />
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          SwiftGram runs entirely on-device. There is no backend, no account server, and no analytics — everything you see was generated or captured locally.
+          SwiftGram is powered by Supabase — your account, posts, and messages sync across every device you log into.
         </Text>
       </ScrollView>
     </SafeAreaView>

@@ -15,5 +15,5 @@ ios/
 npm-debug.*
 yarn-error.*
 .metro-health-check*
-expo-env.d.ts
+.env
 .env*.local

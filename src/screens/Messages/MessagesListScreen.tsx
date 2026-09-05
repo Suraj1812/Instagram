@@ -3,6 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getConversations } from '../../db/repositories/messageRepository';
+import { subscribeToConversationList } from '../../services/realtime';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
@@ -21,6 +22,12 @@ export function MessagesListScreen({ navigation }: any) {
     const unsub = navigation.addListener('focus', load);
     return unsub;
   }, [navigation, load]);
+
+  // Live: a new/updated conversation (e.g. an incoming message) refreshes the list in place.
+  useEffect(() => {
+    const unsubscribe = subscribeToConversationList(load);
+    return unsubscribe;
+  }, [load]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>

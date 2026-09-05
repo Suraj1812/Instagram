@@ -1,52 +1,50 @@
-import { query, transaction, nowMs } from '../database';
 import { nanoid } from 'nanoid';
+import { supabase } from '../../services/supabaseClient';
 import type { Comment } from '../../types';
 
-interface CommentRow {
-  id: string; post_id: string; author_id: string; body: string; created_at: number;
-  username: string; display_name: string | null; avatar_path: string | null;
-}
-
-function rowToComment(r: CommentRow): Comment {
-  return {
-    id: r.id, postId: r.post_id, authorId: r.author_id,
-    author: { id: r.author_id, username: r.username, displayName: r.display_name ?? undefined, avatarPath: r.avatar_path ?? undefined },
-    body: r.body, createdAt: r.created_at,
-  };
-}
-
 export async function getComments(postId: string): Promise<Comment[]> {
-  const rows = await query<CommentRow>(
-    `SELECT c.*, u.username, u.display_name, u.avatar_path FROM comments c
-     JOIN users u ON u.id = c.author_id WHERE c.post_id = ? ORDER BY c.created_at ASC`,
-    [postId]
-  );
-  return rows.map(rowToComment);
+  const { data, error } = await supabase
+    .from('comments')
+    .select('id, post_id, author_id, body, created_at, profiles!comments_author_id_fkey(username, display_name, avatar_path)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    postId: r.post_id,
+    authorId: r.author_id,
+    author: {
+      id: r.author_id,
+      username: r.profiles.username,
+      displayName: r.profiles.display_name ?? undefined,
+      avatarPath: r.profiles.avatar_path ?? undefined,
+    },
+    body: r.body,
+    createdAt: r.created_at,
+  }));
 }
 
 export async function addComment(postId: string, authorId: string, body: string): Promise<Comment> {
   const id = nanoid();
-  const createdAt = nowMs();
-  await transaction(async (db) => {
-    await db.runAsync(`INSERT INTO comments (id, post_id, author_id, body, created_at) VALUES (?, ?, ?, ?, ?)`, [id, postId, authorId, body, createdAt]);
-    await db.runAsync(`UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?`, [postId]);
-    const post = await db.getFirstAsync<{ author_id: string }>('SELECT author_id FROM posts WHERE id = ?', [postId]);
-    if (post && post.author_id !== authorId) {
-      await db.runAsync(
-        `INSERT INTO notifications (id, recipient_id, type, actor_id, target_type, target_id, created_at)
-         VALUES (?, ?, 'comment', ?, 'post', ?, ?)`,
-        [nanoid(), post.author_id, authorId, postId, createdAt]
-      );
-    }
-  });
-  const author = await query<any>('SELECT id, username, display_name, avatar_path FROM users WHERE id = ?', [authorId]);
-  const a = author[0];
-  return { id, postId, authorId, author: { id: a.id, username: a.username, displayName: a.display_name, avatarPath: a.avatar_path }, body, createdAt };
+  const createdAt = Date.now();
+  const { error } = await supabase.from('comments').insert({ id, post_id: postId, author_id: authorId, body, created_at: createdAt });
+  if (error) throw new Error(error.message);
+
+  const { data: author, error: authorErr } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_path')
+    .eq('id', authorId)
+    .single();
+  if (authorErr) throw new Error(authorErr.message);
+
+  return {
+    id, postId, authorId,
+    author: { id: author.id, username: author.username, displayName: author.display_name ?? undefined, avatarPath: author.avatar_path ?? undefined },
+    body, createdAt,
+  };
 }
 
-export async function deleteComment(commentId: string, postId: string) {
-  await transaction(async (db) => {
-    await db.runAsync(`DELETE FROM comments WHERE id = ?`, [commentId]);
-    await db.runAsync(`UPDATE posts SET comment_count = MAX(0, comment_count - 1) WHERE id = ?`, [postId]);
-  });
+export async function deleteComment(commentId: string, _postId: string) {
+  const { error } = await supabase.from('comments').delete().eq('id', commentId);
+  if (error) throw new Error(error.message);
 }

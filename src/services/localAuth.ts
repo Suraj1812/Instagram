@@ -1,19 +1,11 @@
-import * as Crypto from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
-import { nanoid } from 'nanoid';
-import { execute, queryOne, nowMs } from '../db/database';
-import { indexEntity } from '../db/repositories/searchRepository';
+import { supabase } from './supabaseClient';
 
-const SESSION_KEY = 'swiftgram_current_user_id';
-
-async function hashPassword(password: string, salt: string): Promise<string> {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, `${salt}:${password}`);
-}
-
-function randomSalt(): string {
-  // 16 random bytes, hex-encoded — fine for local-device password storage.
-  const bytes = Crypto.getRandomBytes(16);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+// Supabase Auth is email/password based, but SwiftGram's UI only ever asks
+// for a username. We map every username to a deterministic, never-shown
+// synthetic email (username@swiftgram.local) so the rest of the app — and
+// every screen that calls signup()/login() — never has to know that.
+function syntheticEmail(username: string): string {
+  return `${username.trim().toLowerCase()}@swiftgram.local`;
 }
 
 export interface LocalSession {
@@ -22,53 +14,41 @@ export interface LocalSession {
 }
 
 export async function signup(username: string, password: string, displayName?: string): Promise<LocalSession> {
-  const existing = await queryOne<{ id: string }>('SELECT id FROM users WHERE username = ?', [username]);
-  if (existing) throw new Error('That username is already taken on this device.');
+  const clean = username.trim();
+  const { data: existing } = await supabase.from('profiles').select('id').eq('username', clean).maybeSingle();
+  if (existing) throw new Error('That username is already taken.');
 
-  const salt = randomSalt();
-  const hash = await hashPassword(password, salt);
-  const id = nanoid();
-  await execute(
-    `INSERT INTO users (id, username, password_hash, password_salt, display_name, followers_count, following_count, posts_count, created_at)
-     VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?)`,
-    [id, username, hash, salt, displayName ?? username, nowMs()]
-  );
-  await indexEntity(id, 'user', username);
-  await SecureStore.setItemAsync(SESSION_KEY, id);
-  return { userId: id, username };
+  const { data, error } = await supabase.auth.signUp({
+    email: syntheticEmail(clean),
+    password,
+    options: { data: { username: clean, display_name: displayName ?? clean } },
+  });
+  if (error) throw new Error(error.message);
+  if (!data.user) throw new Error('Signup failed — please try again.');
+
+  return { userId: data.user.id, username: clean };
 }
 
 export async function login(username: string, password: string): Promise<LocalSession> {
-  const row = await queryOne<{ id: string; password_hash: string; password_salt: string }>(
-    'SELECT id, password_hash, password_salt FROM users WHERE username = ?',
-    [username]
-  );
-  if (!row) throw new Error('No account with that username on this device.');
-  const hash = await hashPassword(password, row.password_salt);
-  if (hash !== row.password_hash) throw new Error('Incorrect password.');
-  await SecureStore.setItemAsync(SESSION_KEY, row.id);
-  return { userId: row.id, username };
+  const clean = username.trim();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: syntheticEmail(clean),
+    password,
+  });
+  if (error) throw new Error('Incorrect username or password.');
+  if (!data.user) throw new Error('Login failed — please try again.');
+  return { userId: data.user.id, username: clean };
 }
 
 export async function restoreSession(): Promise<LocalSession | null> {
-  const userId = await SecureStore.getItemAsync(SESSION_KEY);
-  if (!userId) return null;
-  const row = await queryOne<{ username: string }>('SELECT username FROM users WHERE id = ?', [userId]);
-  if (!row) {
-    await SecureStore.deleteItemAsync(SESSION_KEY);
-    return null;
-  }
-  return { userId, username: row.username };
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  if (!user) return null;
+  const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+  if (!profile) return null;
+  return { userId: user.id, username: profile.username };
 }
 
 export async function logout() {
-  await SecureStore.deleteItemAsync(SESSION_KEY);
-}
-
-export async function switchAccount(userId: string) {
-  await SecureStore.setItemAsync(SESSION_KEY, userId);
-}
-
-export async function listLocalAccounts() {
-  return queryOne<any>('SELECT id, username, avatar_path FROM users ORDER BY created_at ASC');
+  await supabase.auth.signOut();
 }

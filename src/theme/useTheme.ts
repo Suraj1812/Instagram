@@ -11,11 +11,11 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
-  mode: 'dark',
-  palette: getPalette('dark'),
+  mode: 'light',
+  palette: getPalette('light'),
   hydrate: async () => {
     const saved = await getMeta('theme_mode');
-    const mode = (saved === 'light' ? 'light' : 'dark') as ThemeMode;
+    const mode = (saved === 'dark' ? 'dark' : 'light') as ThemeMode;
     set({ mode, palette: getPalette(mode) });
   },
   toggle: () => {

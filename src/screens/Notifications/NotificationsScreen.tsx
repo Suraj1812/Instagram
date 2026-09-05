@@ -3,6 +3,7 @@ import { Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getNotifications, markAllRead } from '../../db/repositories/notificationRepository';
+import { subscribeToNotifications } from '../../services/realtime';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
@@ -28,6 +29,12 @@ export function NotificationsScreen({ navigation }: any) {
   }, [session.userId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Live: a fresh like/comment/follow while this screen is open reloads the list.
+  useEffect(() => {
+    const unsubscribe = subscribeToNotifications(session.userId, () => { load(); });
+    return unsubscribe;
+  }, [session.userId, load]);
 
   const onPress = (n: AppNotification) => {
     if (n.targetType === 'post' && n.targetId) navigation.navigate('PostDetail', { postId: n.targetId });

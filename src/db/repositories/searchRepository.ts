@@ -1,13 +1,11 @@
-import { query, execute } from '../database';
+import { supabase } from '../../services/supabaseClient';
 
-export async function indexEntity(entityId: string, entityType: 'user' | 'post', text: string) {
-  await execute(`DELETE FROM search_index WHERE entity_id = ? AND entity_type = ?`, [entityId, entityType]);
-  await execute(`INSERT INTO search_index (entity_id, entity_type, text) VALUES (?, ?, ?)`, [entityId, entityType, text]);
-}
-
-export async function removeFromIndex(entityId: string, entityType: string) {
-  await execute(`DELETE FROM search_index WHERE entity_id = ? AND entity_type = ?`, [entityId, entityType]);
-}
+// Search is now a plain ILIKE query against Postgres (via the search_all RPC)
+// instead of a local FTS5 index the app had to maintain itself — so there's
+// nothing to keep in sync. These two are no-ops kept only so existing call
+// sites (createPost, updateProfile, signup) don't need to change.
+export async function indexEntity(_entityId: string, _entityType: 'user' | 'post', _text: string) {}
+export async function removeFromIndex(_entityId: string, _entityType: string) {}
 
 export interface SearchHit {
   entity_id: string;
@@ -16,10 +14,9 @@ export interface SearchHit {
 }
 
 export async function searchAll(term: string, limit = 30): Promise<SearchHit[]> {
-  const cleaned = term.trim().replace(/["*]/g, '');
+  const cleaned = term.trim();
   if (!cleaned) return [];
-  return query<SearchHit>(
-    `SELECT entity_id, entity_type, text FROM search_index WHERE search_index MATCH ? ORDER BY rank LIMIT ?`,
-    [`${cleaned}*`, limit]
-  );
+  const { data, error } = await supabase.rpc('search_all', { term: cleaned, result_limit: limit });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: any) => ({ entity_id: r.entity_id, entity_type: r.entity_type, text: r.text_value }));
 }

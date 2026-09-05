@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { getProfileById, updateProfile } from '../../db/repositories/userRepository';
-import { persistImage } from '../../services/mediaStorage';
+import { persistAvatar } from '../../services/mediaStorage';
 import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { Input } from '../../components/Input';
@@ -36,7 +36,7 @@ export function EditProfileScreen({ navigation }: any) {
     if (!perm.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1, aspect: [1, 1] });
     if (result.canceled) return;
-    const { path } = await persistImage(result.assets[0].uri);
+    const path = await persistAvatar(result.assets[0].uri);
     setAvatarPath(path);
   };
 

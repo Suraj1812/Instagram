@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -8,7 +8,6 @@ import { useThemeStore, useTheme } from '../theme/useTheme';
 import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { OnboardingScreen } from '../screens/Onboarding/OnboardingScreen';
-import { seedIfNeeded } from '../services/seedData';
 import { pruneExpiredStories } from '../db/repositories/storyRepository';
 
 const Stack = createNativeStackNavigator();
@@ -18,23 +17,20 @@ export function RootNavigator() {
   const { completed: onboarded, hydrate: hydrateOnboarding } = useOnboardingStore();
   const { mode, hydrate: hydrateTheme } = useThemeStore();
   const { colors } = useTheme();
-  const [seeded, setSeeded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      await seedIfNeeded();          // populate demo network on first-ever launch
-      await pruneExpiredStories();   // housekeeping on every cold start
-      setSeeded(true);
       await hydrateTheme();
       await bootstrap();
       await hydrateOnboarding();
+      pruneExpiredStories(); // housekeeping on every cold start, don't block UI on it
     })();
   }, [bootstrap, hydrateTheme, hydrateOnboarding]);
 
-  if (!seeded || isBootstrapping || onboarded === null) {
+  if (isBootstrapping || onboarded === null) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#fff" />
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }

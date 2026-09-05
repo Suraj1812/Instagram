@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { persistImage } from '../../services/mediaStorage';
+import { persistStoryImage } from '../../services/mediaStorage';
 import { createStory } from '../../db/repositories/storyRepository';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../theme/useTheme';
@@ -29,7 +29,7 @@ export function CreateStoryScreen({ navigation }: any) {
   const publish = async () => {
     if (!uri) return;
     setPosting(true);
-    const { path } = await persistImage(uri);
+    const path = await persistStoryImage(uri);
     await createStory(session.userId, path, 'image');
     setPosting(false);
     navigation.goBack();

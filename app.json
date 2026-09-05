@@ -42,7 +42,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "./plugins/withAndroidDependencies",
       [
         "expo-camera",
         {
@@ -50,6 +58,17 @@
           "microphonePermission": "SwiftGram needs microphone access to record videos and for voice/video calls."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "63509f70-a4f2-496b-ab82-0a725d57c59a"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/63509f70-a4f2-496b-ab82-0a725d57c59a"
+    }
   }
 }

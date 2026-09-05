@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMessages, sendMessage, markConversationRead } from '../../db/repositories/messageRepository';
+import { subscribeToConversation } from '../../services/realtime';
 import { useAuthStore } from '../../store/authStore';
 import { Input } from '../../components/Input';
 import { ChevronLeftIcon, PhoneCallIcon, VideoCameraIcon } from '../../components/icons';
@@ -22,6 +23,20 @@ export function ChatScreen({ route, navigation }: any) {
   }, [conversationId, session.userId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Live updates: if the other person sends a message while this screen is
+  // open, it appears instantly instead of waiting for a manual refresh.
+  useEffect(() => {
+    const unsubscribe = subscribeToConversation(conversationId, (row) => {
+      setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, {
+        id: row.id, conversationId: row.conversation_id, senderId: row.sender_id,
+        body: row.body, mediaPath: row.media_path ?? undefined, createdAt: row.created_at, readAt: row.read_at ?? undefined,
+      }]));
+      if (row.sender_id !== session.userId) markConversationRead(conversationId, session.userId);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    });
+    return unsubscribe;
+  }, [conversationId, session.userId]);
 
   const onSend = async () => {
     if (!draft.trim()) return;

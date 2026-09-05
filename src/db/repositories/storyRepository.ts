@@ -1,5 +1,5 @@
-import { query, execute, nowMs } from '../database';
 import { nanoid } from 'nanoid';
+import { supabase } from '../../services/supabaseClient';
 import type { StoryGroup } from '../../types';
 
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
@@ -8,24 +8,14 @@ interface StoryRow {
   id: string; author_id: string; media_path: string; media_type: string;
   duration_ms: number; created_at: number; expires_at: number;
   username: string; display_name: string | null; avatar_path: string | null;
+  viewed_by_me: boolean;
 }
 
 /** Active (unexpired) stories grouped by author, ordered so unseen authors show first. */
 export async function getActiveStoryGroups(meUserId: string): Promise<StoryGroup[]> {
-  const rows = await query<StoryRow>(
-    `SELECT s.*, u.username, u.display_name, u.avatar_path FROM stories s
-     JOIN users u ON u.id = s.author_id
-     WHERE s.expires_at > ?
-       AND (s.author_id = ? OR s.author_id IN (SELECT followee_id FROM follows WHERE follower_id = ?))
-     ORDER BY s.created_at ASC`,
-    [Date.now(), meUserId, meUserId]
-  );
-
-  const seenRows = await query<{ story_id: string }>(
-    `SELECT story_id FROM story_views WHERE viewer_id = ?`,
-    [meUserId]
-  );
-  const seenSet = new Set(seenRows.map((r) => r.story_id));
+  const { data, error } = await supabase.rpc('get_active_story_groups');
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as StoryRow[];
 
   const groups = new Map<string, StoryGroup>();
   for (const r of rows) {
@@ -38,11 +28,10 @@ export async function getActiveStoryGroups(meUserId: string): Promise<StoryGroup
       });
     }
     const g = groups.get(r.author_id)!;
-    const viewed = seenSet.has(r.id);
-    if (!viewed) g.hasUnseen = true;
+    if (!r.viewed_by_me) g.hasUnseen = true;
     g.stories.push({
       id: r.id, authorId: r.author_id, mediaPath: r.media_path, mediaType: r.media_type as any,
-      durationMs: r.duration_ms, createdAt: r.created_at, expiresAt: r.expires_at, viewedByMe: viewed,
+      durationMs: r.duration_ms, createdAt: r.created_at, expiresAt: r.expires_at, viewedByMe: r.viewed_by_me,
     });
   }
 
@@ -58,23 +47,22 @@ export async function getActiveStoryGroups(meUserId: string): Promise<StoryGroup
 }
 
 export async function markStoryViewed(storyId: string, viewerId: string) {
-  await execute(
-    `INSERT INTO story_views (story_id, viewer_id, viewed_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
-    [storyId, viewerId, nowMs()]
-  );
+  const { error } = await supabase.from('story_views').upsert({ story_id: storyId, viewer_id: viewerId, viewed_at: Date.now() });
+  if (error) throw new Error(error.message);
 }
 
 export async function createStory(authorId: string, mediaPath: string, mediaType: 'image' | 'video', durationMs = 5000): Promise<string> {
   const id = nanoid();
-  const now = nowMs();
-  await execute(
-    `INSERT INTO stories (id, author_id, media_path, media_type, duration_ms, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, authorId, mediaPath, mediaType, durationMs, now, now + STORY_TTL_MS]
-  );
+  const now = Date.now();
+  const { error } = await supabase.from('stories').insert({
+    id, author_id: authorId, media_path: mediaPath, media_type: mediaType,
+    duration_ms: durationMs, created_at: now, expires_at: now + STORY_TTL_MS,
+  });
+  if (error) throw new Error(error.message);
   return id;
 }
 
-/** Call occasionally (e.g. app foreground) to drop expired stories and their view records. */
+/** Call occasionally (e.g. app foreground) to drop expired stories. Cheap no-op if nothing's expired. */
 export async function pruneExpiredStories() {
-  await execute(`DELETE FROM stories WHERE expires_at <= ?`, [Date.now()]);
+  await supabase.from('stories').delete().lt('expires_at', Date.now());
 }
