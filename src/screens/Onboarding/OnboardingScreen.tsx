@@ -1,16 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Pressable, Image } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '../../components/Button';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useTheme } from '../../theme/useTheme';
 
 const SLIDES = [
-  { emoji: '📱', title: 'Welcome to Instagram', body: 'Share moments with a feed that opens instantly and never waits on a spinner.' },
-  { emoji: '🔒', title: 'Everything stays on your device', body: 'No servers, no accounts in the cloud. Your posts, photos, and messages live only on this phone.' },
-  { emoji: '⚡️', title: 'Built for speed', body: 'Local storage means your feed, stories, and reels load instantly — online or off.' },
+  { title: 'Welcome to Instagram', body: 'Share moments with a feed that opens instantly and never waits on a spinner.' },
+  { title: 'Everything stays on your device', body: 'No servers, no accounts in the cloud. Your posts, photos, and messages live only on this phone.' },
+  { title: 'Built for speed', body: 'Local storage means your feed, stories, and reels load instantly — online or off.' },
 ];
 
 export function OnboardingScreen() {
@@ -42,9 +41,7 @@ export function OnboardingScreen() {
       <PagerView ref={pagerRef} style={{ flex: 1 }} initialPage={0} onPageSelected={(e) => setPage(e.nativeEvent.position)}>
         {SLIDES.map((slide, i) => (
           <View key={i} style={[styles.slide, { width }]}>
-            <LinearGradient colors={['#833ab4', '#fd1d1d', '#fcb045']} style={styles.iconCircle}>
-              <Text style={styles.emoji}>{slide.emoji}</Text>
-            </LinearGradient>
+            <Image source={require('../../../assets/logo.png')} style={styles.onboardingLogo} resizeMode="contain" />
             <Text style={[styles.title, { color: colors.text }]}>{slide.title}</Text>
             <Text style={[styles.body, { color: colors.textMuted }]}>{slide.body}</Text>
           </View>
@@ -68,8 +65,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   skip: { alignSelf: 'flex-end', padding: 16 },
   slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  iconCircle: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
-  emoji: { fontSize: 44 },
+  onboardingLogo: { width: 112, height: 112, marginBottom: 28 },
   title: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
   body: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 20 },
