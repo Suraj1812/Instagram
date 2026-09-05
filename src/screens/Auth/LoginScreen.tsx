@@ -34,7 +34,7 @@ export function LoginScreen({ navigation }: any) {
           resizeMode="contain"
           accessibilityLabel="Instagram"
         />
-        <Text style={[styles.tagline, { color: colors.textMuted }]}>Log in to the account stored on this device</Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>Log in to your Instagram account</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
         <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />
         <Button label="Log in" onPress={onSubmit} loading={loading} disabled={!username || !password} style={{ marginTop: 8 }} />

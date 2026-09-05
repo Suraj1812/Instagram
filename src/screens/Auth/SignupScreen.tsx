@@ -29,7 +29,7 @@ export function SignupScreen({ navigation }: any) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
         <Text style={[styles.logo, { color: colors.text }]}>Create your account</Text>
-        <Text style={[styles.tagline, { color: colors.textMuted }]}>Stored only on this device — no server, ever.</Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>Your account and content sync securely across devices.</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
         <Input placeholder="Display name (optional)" value={displayName} onChangeText={setDisplayName} style={styles.field} />
         <Input placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={styles.field} />

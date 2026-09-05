@@ -2,10 +2,10 @@ import { supabase } from './supabaseClient';
 
 // Supabase Auth is email/password based, but SwiftGram's UI only ever asks
 // for a username. We map every username to a deterministic, never-shown
-// synthetic email (username@swiftgram.local) so the rest of the app — and
+// synthetic email (username@swiftgram.app) so the rest of the app — and
 // every screen that calls signup()/login() — never has to know that.
 function syntheticEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@swiftgram.local`;
+  return `${username.trim().toLowerCase()}@swiftgram.app`;
 }
 
 export interface LocalSession {
