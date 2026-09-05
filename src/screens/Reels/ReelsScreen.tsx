@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions, ViewToken } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, ViewToken, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ResizeMode, Video } from 'expo-av';
@@ -8,12 +8,13 @@ import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { HeartIcon, CommentIcon, BookmarkIcon } from '../../components/icons';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingState } from '../../components/LoadingState';
 import type { Post } from '../../types';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
-function ReelItem({ post, isActive, onToggleLike, onToggleSave, onPressProfile }: {
-  post: Post; isActive: boolean; onToggleLike: () => void; onToggleSave: () => void; onPressProfile: () => void;
+function ReelItem({ post, isActive, onToggleLike, onToggleSave, onPressComments, onPressProfile }: {
+  post: Post; isActive: boolean; onToggleLike: () => void; onToggleSave: () => void; onPressComments: () => void; onPressProfile: () => void;
 }) {
   const videoRef = useRef<Video>(null);
 
@@ -49,7 +50,7 @@ function ReelItem({ post, isActive, onToggleLike, onToggleSave, onPressProfile }
             <HeartIcon size={30} color={post.likedByMe ? '#ff3040' : '#fff'} filled={post.likedByMe} />
             <Text style={styles.sideCount}>{post.likeCount}</Text>
           </Pressable>
-          <Pressable style={styles.sideBtn}>
+          <Pressable style={styles.sideBtn} onPress={onPressComments}>
             <CommentIcon size={28} color="#fff" />
             <Text style={styles.sideCount}>{post.commentCount}</Text>
           </Pressable>
@@ -69,11 +70,13 @@ export function ReelsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getReelsPage(session.userId, null, 20).then((r) => {
-      setReels(r);
-      setActiveId(r[0]?.id ?? null);
-      setLoading(false);
-    });
+    getReelsPage(session.userId, null, 20)
+      .then((r) => {
+        setReels(r);
+        setActiveId(r[0]?.id ?? null);
+      })
+      .catch((error: any) => Alert.alert('Could not load reels', error?.message ?? 'Please try again.'))
+      .finally(() => setLoading(false));
   }, [session.userId]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -83,16 +86,30 @@ export function ReelsScreen({ navigation }: any) {
   const onLike = useCallback(async (postId: string) => {
     setReels((prev) => prev.map((p) => (p.id === postId ? { ...p, likedByMe: !p.likedByMe, likeCount: p.likeCount + (p.likedByMe ? -1 : 1) } : p)));
     const target = reels.find((p) => p.id === postId);
-    if (target) await toggleLike(session.userId, postId, !target.likedByMe);
+    if (target) {
+      try {
+        await toggleLike(session.userId, postId, !target.likedByMe);
+      } catch (error: any) {
+        setReels((prev) => prev.map((p) => (p.id === postId ? target : p)));
+        Alert.alert('Could not update like', error?.message ?? 'Please try again.');
+      }
+    }
   }, [reels, session.userId]);
 
   const onSave = useCallback(async (postId: string) => {
     setReels((prev) => prev.map((p) => (p.id === postId ? { ...p, savedByMe: !p.savedByMe } : p)));
     const target = reels.find((p) => p.id === postId);
-    if (target) await toggleSave(session.userId, postId, !target.savedByMe);
+    if (target) {
+      try {
+        await toggleSave(session.userId, postId, !target.savedByMe);
+      } catch (error: any) {
+        setReels((prev) => prev.map((p) => (p.id === postId ? target : p)));
+        Alert.alert('Could not update save', error?.message ?? 'Please try again.');
+      }
+    }
   }, [reels, session.userId]);
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#000' }}><LoadingState label="Loading Reels…" dark /></View>;
   if (reels.length === 0) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
@@ -111,6 +128,7 @@ export function ReelsScreen({ navigation }: any) {
           isActive={item.id === activeId}
           onToggleLike={() => onLike(item.id)}
           onToggleSave={() => onSave(item.id)}
+          onPressComments={() => navigation.navigate('PostDetail', { postId: item.id })}
           onPressProfile={() => navigation.navigate('Profile', { username: item.author.username })}
         />
       )}

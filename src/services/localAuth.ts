@@ -35,9 +35,17 @@ export async function login(username: string, password: string): Promise<LocalSe
     email: syntheticEmail(clean),
     password,
   });
-  if (error) throw new Error('Incorrect username or password.');
-  if (!data.user) throw new Error('Login failed — please try again.');
-  return { userId: data.user.id, username: clean };
+  if (!error && data.user) return { userId: data.user.id, username: clean };
+
+  // Demo accounts created by the original seeder used the old .local domain.
+  // Keep this read-only fallback so existing showcase accounts remain usable
+  // while all new signups continue using the valid .app domain above.
+  const legacy = await supabase.auth.signInWithPassword({
+    email: `${clean.toLowerCase()}@swiftgram.local`,
+    password,
+  });
+  if (legacy.error || !legacy.data.user) throw new Error('Incorrect username or password.');
+  return { userId: legacy.data.user.id, username: clean };
 }
 
 export async function restoreSession(): Promise<LocalSession | null> {

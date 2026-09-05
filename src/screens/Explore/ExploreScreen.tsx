@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, Alert, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getExplorePage } from '../../db/repositories/postRepository';
-import { getSuggestedAccounts } from '../../db/repositories/userRepository';
+import { getSuggestedAccounts, toggleFollow } from '../../db/repositories/userRepository';
 import { useAuthStore } from '../../store/authStore';
 import { LocalImage } from '../../components/LocalImage';
-import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { Input } from '../../components/Input';
 import { useTheme } from '../../theme/useTheme';
+import { SuggestedAccounts, SuggestedAccountsHeader } from '../../components/SuggestedAccounts';
+import { LoadingState } from '../../components/LoadingState';
 import type { Post, Author } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -24,16 +25,20 @@ export function ExploreScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [followingUsername, setFollowingUsername] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [p, s] = await Promise.all([
-      getExplorePage(session.userId, 0, 24),
-      getSuggestedAccounts(session.userId, 8),
-    ]);
-    setPosts(p);
-    setSuggested(s);
-    setHasMore(p.length === 24);
-    setLoading(false);
+    try {
+      const [p, s] = await Promise.all([getExplorePage(session.userId, 0, 24), getSuggestedAccounts(session.userId, 8)]);
+      setPosts(p);
+      setSuggested(s);
+      setHasMore(p.length === 24);
+      setLoadError(null);
+    } catch (error: any) {
+      setLoadError(error?.message ?? 'Could not load Explore.');
+    } finally { setLoading(false); }
   }, [session.userId]);
 
   useEffect(() => { load(); }, [load]);
@@ -41,13 +46,34 @@ export function ExploreScreen({ navigation }: any) {
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
-    const next = await getExplorePage(session.userId, posts.length, 24);
-    setPosts((prev) => [...prev, ...next]);
-    setHasMore(next.length === 24);
-    setLoadingMore(false);
+    try {
+      const next = await getExplorePage(session.userId, posts.length, 24);
+      setPosts((prev) => [...prev, ...next]);
+      setHasMore(next.length === 24);
+    } catch (error: any) {
+      setLoadError(error?.message ?? 'Could not load more posts.');
+    } finally { setLoadingMore(false); }
   };
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  const followSuggestion = async (account: Author) => {
+    setFollowingUsername(account.username);
+    setSuggested((prev) => prev.filter((item) => item.id !== account.id));
+    try {
+      await toggleFollow(session.userId, account.id, true);
+    } catch (error: any) {
+      setSuggested((prev) => [account, ...prev]);
+      Alert.alert('Could not follow account', error?.message ?? 'Please try again.');
+    } finally {
+      setFollowingUsername(null);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try { await load(); } finally { setRefreshing(false); }
+  };
+
+  if (loading) return <View style={{ flex: 1, backgroundColor: colors.bg }}><LoadingState label="Loading Explore…" /></View>;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -63,27 +89,21 @@ export function ExploreScreen({ navigation }: any) {
         estimatedItemSize={CELL}
         onEndReached={loadMore}
         onEndReachedThreshold={2}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
         ListHeaderComponent={
           suggested.length > 0 ? (
             <View style={styles.suggestedSection}>
-              <Text style={[styles.suggestedTitle, { color: colors.text }]}>Suggested for you</Text>
-              <FlashList
-                horizontal
-                data={suggested}
-                keyExtractor={(a) => a.id}
-                estimatedItemSize={80}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item }) => (
-                  <Pressable style={styles.suggestedItem} onPress={() => navigation.navigate('Profile', { username: item.username })}>
-                    <Avatar path={item.avatarPath} size={64} />
-                    <Text style={[styles.suggestedName, { color: colors.text }]} numberOfLines={1}>{item.username}</Text>
-                  </Pressable>
-                )}
+              <SuggestedAccountsHeader />
+              <SuggestedAccounts
+                accounts={suggested}
+                loadingUsername={followingUsername}
+                onPressProfile={(username) => navigation.navigate('Profile', { username })}
+                onFollow={followSuggestion}
               />
             </View>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon="🔎" title="Nothing to explore yet" subtitle="Once more accounts post, they'll show up here." />}
+        ListEmptyComponent={loadError ? <EmptyState icon="⚠️" title="Explore is unavailable" subtitle="Pull down to try again." /> : <EmptyState icon="🔎" title="Nothing to explore yet" subtitle="Once more accounts post, they'll show up here." />}
         renderItem={({ item }) => (
           <Pressable
             style={{ width: CELL, height: CELL, margin: GUTTER / 2 }}
@@ -102,8 +122,5 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   searchBar: { marginHorizontal: 12, marginBottom: 8 },
   suggestedSection: { paddingVertical: 12 },
-  suggestedTitle: { fontSize: 15, fontWeight: '700', paddingHorizontal: 12, marginBottom: 8 },
-  suggestedItem: { alignItems: 'center', width: 80 },
-  suggestedName: { fontSize: 11, marginTop: 4 },
   reelBadge: { position: 'absolute', top: 6, right: 6, fontSize: 14 },
 });

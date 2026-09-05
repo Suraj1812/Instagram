@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMessages, sendMessage, markConversationRead } from '../../db/repositories/messageRepository';
 import { subscribeToConversation } from '../../services/realtime';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Input } from '../../components/Input';
 import { ChevronLeftIcon, PhoneCallIcon, VideoCameraIcon } from '../../components/icons';
 import { useTheme } from '../../theme/useTheme';
+import { LoadingState } from '../../components/LoadingState';
 import type { ChatMessage } from '../../types';
 
 export function ChatScreen({ route, navigation }: any) {
@@ -15,11 +16,17 @@ export function ChatScreen({ route, navigation }: any) {
   const session = useAuthStore((s) => s.session)!;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList>(null);
 
   const load = useCallback(async () => {
-    setMessages(await getMessages(conversationId));
-    await markConversationRead(conversationId, session.userId);
+    try {
+      setMessages(await getMessages(conversationId));
+      await markConversationRead(conversationId, session.userId);
+    } catch (error: any) {
+      Alert.alert('Could not load chat', error?.message ?? 'Please try again.');
+    } finally { setLoading(false); }
   }, [conversationId, session.userId]);
 
   useEffect(() => { load(); }, [load]);
@@ -42,9 +49,15 @@ export function ChatScreen({ route, navigation }: any) {
     if (!draft.trim()) return;
     const text = draft.trim();
     setDraft('');
-    const msg = await sendMessage(conversationId, session.userId, text);
-    setMessages((prev) => [...prev, msg]);
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    setSending(true);
+    try {
+      const msg = await sendMessage(conversationId, session.userId, text);
+      setMessages((prev) => [...prev, msg]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    } catch (error: any) {
+      setDraft(text);
+      Alert.alert('Could not send message', error?.message ?? 'Please try again.');
+    } finally { setSending(false); }
   };
 
   return (
@@ -62,7 +75,7 @@ export function ChatScreen({ route, navigation }: any) {
             </Pressable>
           </View>
         </View>
-        <FlatList
+        {loading ? <LoadingState label="Loading chat…" /> : <FlatList
           ref={listRef}
           data={messages}
           keyExtractor={(m) => m.id}
@@ -75,11 +88,11 @@ export function ChatScreen({ route, navigation }: any) {
               </View>
             );
           }}
-        />
+        />}
         <View style={[styles.inputBar, { borderTopColor: colors.border }]}>
           <Input placeholder="Message…" value={draft} onChangeText={setDraft} style={{ flex: 1 }} />
-          <Pressable onPress={onSend} disabled={!draft.trim()} style={{ marginLeft: 10 }}>
-            <Text style={{ color: colors.accent, fontWeight: '700' }}>Send</Text>
+          <Pressable onPress={onSend} disabled={!draft.trim() || sending} style={{ marginLeft: 10 }}>
+            {sending ? <ActivityIndicator color={colors.accent} /> : <Text style={{ color: colors.accent, fontWeight: '700' }}>Send</Text>}
           </Pressable>
         </View>
       </SafeAreaView>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { persistStoryImage } from '../../services/mediaStorage';
@@ -15,24 +15,34 @@ export function CreateStoryScreen({ navigation }: any) {
   const [posting, setPosting] = useState(false);
 
   const pick = async (fromCamera: boolean) => {
-    const perm = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const result = fromCamera
-      ? await ImagePicker.launchCameraAsync({ quality: 1, aspect: [9, 16] })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1 });
-    if (result.canceled) return;
-    setUri(result.assets[0].uri);
+    try {
+      const perm = fromCamera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(fromCamera ? 'Camera permission needed' : 'Photo permission needed', 'Allow access to create a story.');
+        return;
+      }
+      const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({ quality: 1, aspect: [9, 16] })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1 });
+      if (result.canceled) return;
+      setUri(result.assets[0].uri);
+    } catch (error: any) {
+      Alert.alert('Could not choose photo', error?.message ?? 'Please try again.');
+    }
   };
 
   const publish = async () => {
     if (!uri) return;
     setPosting(true);
-    const path = await persistStoryImage(uri);
-    await createStory(session.userId, path, 'image');
-    setPosting(false);
-    navigation.goBack();
+    try {
+      const path = await persistStoryImage(uri);
+      await createStory(session.userId, path, 'image');
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert('Could not publish story', error?.message ?? 'Please try again.');
+    } finally {
+      setPosting(false);
+    }
   };
 
   return (

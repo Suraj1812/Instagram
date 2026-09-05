@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { persistImage, persistVideo } from '../../services/mediaStorage';
@@ -20,15 +20,19 @@ export function CreatePostScreen({ navigation }: any) {
   const [posting, setPosting] = useState(false);
 
   const pick = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      quality: 1,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    setPicked(asset.type === 'video' ? { kind: 'video', uri: asset.uri } : { kind: 'image', uri: asset.uri });
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Photo permission needed', 'Allow photo access to choose media for your post.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 1 });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      setPicked(asset.type === 'video' ? { kind: 'video', uri: asset.uri } : { kind: 'image', uri: asset.uri });
+    } catch (error: any) {
+      Alert.alert('Could not choose media', error?.message ?? 'Please try again.');
+    }
   };
 
   const publish = async () => {
@@ -53,6 +57,9 @@ export function CreatePostScreen({ navigation }: any) {
       setPicked(null);
       setCaption('');
       navigation.navigate(picked.kind === 'video' ? 'ReelsTab' : 'HomeTab');
+      Alert.alert('Posted', picked.kind === 'video' ? 'Your Reel is live.' : 'Your post is live.');
+    } catch (error: any) {
+      Alert.alert('Could not publish', error?.message ?? 'Please try again.');
     } finally {
       setPosting(false);
     }

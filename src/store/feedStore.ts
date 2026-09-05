@@ -7,6 +7,7 @@ interface FeedState {
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
+  error: string | null;
   load: (meUserId: string) => Promise<void>;
   loadMore: (meUserId: string) => Promise<void>;
   toggleLike: (meUserId: string, postId: string) => Promise<void>;
@@ -21,20 +22,29 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   loading: true,
   loadingMore: false,
   hasMore: true,
+  error: null,
 
   load: async (meUserId) => {
-    set({ loading: true });
-    const posts = await postRepo.getFeedPage(meUserId, null, PAGE_SIZE);
-    set({ posts, loading: false, hasMore: posts.length === PAGE_SIZE });
+    set({ loading: true, error: null });
+    try {
+      const posts = await postRepo.getFeedPage(meUserId, null, PAGE_SIZE);
+      set({ posts, loading: false, hasMore: posts.length === PAGE_SIZE });
+    } catch (error: any) {
+      set({ posts: [], loading: false, hasMore: false, error: error?.message ?? 'Could not load your feed.' });
+    }
   },
 
   loadMore: async (meUserId) => {
     const { posts, loadingMore, hasMore } = get();
     if (loadingMore || !hasMore || posts.length === 0) return;
     set({ loadingMore: true });
-    const oldest = posts[posts.length - 1].createdAt;
-    const next = await postRepo.getFeedPage(meUserId, oldest, PAGE_SIZE);
-    set({ posts: [...posts, ...next], loadingMore: false, hasMore: next.length === PAGE_SIZE });
+    try {
+      const oldest = posts[posts.length - 1].createdAt;
+      const next = await postRepo.getFeedPage(meUserId, oldest, PAGE_SIZE);
+      set({ posts: [...posts, ...next], loadingMore: false, hasMore: next.length === PAGE_SIZE });
+    } catch (error: any) {
+      set({ loadingMore: false, error: error?.message ?? 'Could not load more posts.' });
+    }
   },
 
   toggleLike: async (meUserId, postId) => {

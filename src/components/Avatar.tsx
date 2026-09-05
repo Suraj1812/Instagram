@@ -17,7 +17,14 @@ export function Avatar({ path, size, ringState = 'none' }: Props) {
 
   const content = (
     <View style={{ width: inner, height: inner, borderRadius: inner / 2, overflow: 'hidden', backgroundColor: colors.surfaceAlt }}>
-      {path ? <LocalImage path={path} style={{ width: inner, height: inner }} /> : null}
+      {path ? (
+        <LocalImage path={path} style={{ width: inner, height: inner }} />
+      ) : (
+        <View style={styles.fallback} accessibilityLabel="Default profile photo">
+          <View style={[styles.fallbackHead, { backgroundColor: colors.textMuted, width: inner * 0.28, height: inner * 0.28, borderRadius: inner }]}/>
+          <View style={[styles.fallbackBody, { backgroundColor: colors.textMuted, width: inner * 0.56, height: inner * 0.28, borderRadius: inner * 0.3 }]}/>
+        </View>
+      )}
     </View>
   );
 
@@ -43,4 +50,7 @@ export function Avatar({ path, size, ringState = 'none' }: Props) {
 const styles = StyleSheet.create({
   ring: { alignItems: 'center', justifyContent: 'center' },
   ringInner: { padding: 2, borderRadius: 999 },
+  fallback: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '18%' },
+  fallbackHead: { marginBottom: '8%' },
+  fallbackBody: {},
 });

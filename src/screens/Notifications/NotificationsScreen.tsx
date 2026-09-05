@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getNotifications, markAllRead } from '../../db/repositories/notificationRepository';
@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { useTheme } from '../../theme/useTheme';
+import { LoadingState } from '../../components/LoadingState';
 import type { AppNotification } from '../../types';
 
 const LABELS: Record<AppNotification['type'], string> = {
@@ -21,11 +22,16 @@ export function NotificationsScreen({ navigation }: any) {
   const { colors } = useTheme();
   const session = useAuthStore((s) => s.session)!;
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const list = await getNotifications(session.userId);
-    setItems(list);
-    await markAllRead(session.userId);
+    try {
+      const list = await getNotifications(session.userId);
+      setItems(list);
+      await markAllRead(session.userId);
+    } catch (error: any) {
+      Alert.alert('Could not load notifications', error?.message ?? 'Please try again.');
+    } finally { setLoading(false); }
   }, [session.userId]);
 
   useEffect(() => { load(); }, [load]);
@@ -44,7 +50,7 @@ export function NotificationsScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <Text style={[styles.header, { color: colors.text }]}>Notifications</Text>
-      <FlatList
+      {loading ? <LoadingState label="Loading notifications…" /> : <FlatList
         data={items}
         keyExtractor={(n) => n.id}
         ListEmptyComponent={<EmptyState icon="🔔" title="No notifications yet" subtitle="Likes, comments, and new followers will show up here." />}
@@ -57,7 +63,7 @@ export function NotificationsScreen({ navigation }: any) {
             <Text style={[styles.time, { color: colors.textMuted }]}>{formatDistanceToNowStrict(item.createdAt)}</Text>
           </Pressable>
         )}
-      />
+      />}
     </SafeAreaView>
   );
 }

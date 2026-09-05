@@ -1,25 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFollowers, getFollowing } from '../../db/repositories/userRepository';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { useTheme } from '../../theme/useTheme';
+import { LoadingState } from '../../components/LoadingState';
 import type { Author } from '../../types';
 
 export function FollowersScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const { userId, mode }: { userId: string; mode: 'followers' | 'following' } = route.params;
   const [list, setList] = useState<Author[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (mode === 'followers' ? getFollowers(userId) : getFollowing(userId)).then(setList);
+    (mode === 'followers' ? getFollowers(userId) : getFollowing(userId))
+      .then(setList)
+      .catch((error: any) => Alert.alert('Could not load list', error?.message ?? 'Please try again.'))
+      .finally(() => setLoading(false));
   }, [userId, mode]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <Text style={[styles.header, { color: colors.text }]}>{mode === 'followers' ? 'Followers' : 'Following'}</Text>
-      <FlatList
+      {loading ? <LoadingState label={`Loading ${mode}…`} /> : <FlatList
         data={list}
         keyExtractor={(a) => a.id}
         ListEmptyComponent={<EmptyState icon="👥" title={mode === 'followers' ? 'No followers yet' : 'Not following anyone yet'} />}
@@ -32,7 +37,7 @@ export function FollowersScreen({ route, navigation }: any) {
             </View>
           </Pressable>
         )}
-      />
+      />}
     </SafeAreaView>
   );
 }

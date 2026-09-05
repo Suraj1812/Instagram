@@ -95,7 +95,7 @@ async function main() {
   const userIds = [];
   for (let i = 0; i < SEED_USERS.length; i++) {
     const spec = SEED_USERS[i];
-    const email = `${spec.username}@swiftgram.local`;
+    const email = `${spec.username}@swiftgram.app`;
     const { data: created, error } = await admin.auth.admin.createUser({
       email,
       password: SEED_PASSWORD,

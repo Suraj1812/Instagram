@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getPostById, toggleLike, toggleSave } from '../../db/repositories/postRepository';
 import { getComments, addComment } from '../../db/repositories/commentRepository';
@@ -18,6 +18,7 @@ export function PostDetailScreen({ route, navigation }: any) {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState('');
+  const commentsRef = useRef<FlatList<Comment>>(null);
 
   const load = useCallback(async () => {
     const [p, c] = await Promise.all([getPostById(session.userId, postId), getComments(postId)]);
@@ -31,22 +32,38 @@ export function PostDetailScreen({ route, navigation }: any) {
     if (!post) return;
     const nextLiked = !post.likedByMe;
     setPost({ ...post, likedByMe: nextLiked, likeCount: post.likeCount + (nextLiked ? 1 : -1) });
-    await toggleLike(session.userId, post.id, nextLiked);
+    try {
+      await toggleLike(session.userId, post.id, nextLiked);
+    } catch (error: any) {
+      setPost(post);
+      Alert.alert('Could not update like', error?.message ?? 'Please try again.');
+    }
   };
   const onSave = async () => {
     if (!post) return;
     const nextSaved = !post.savedByMe;
     setPost({ ...post, savedByMe: nextSaved });
-    await toggleSave(session.userId, post.id, nextSaved);
+    try {
+      await toggleSave(session.userId, post.id, nextSaved);
+    } catch (error: any) {
+      setPost(post);
+      Alert.alert('Could not update save', error?.message ?? 'Please try again.');
+    }
   };
 
   const onSend = async () => {
     if (!draft.trim()) return;
     const text = draft.trim();
     setDraft('');
-    const c = await addComment(postId, session.userId, text);
-    setComments((prev) => [...prev, c]);
-    setPost((p) => (p ? { ...p, commentCount: p.commentCount + 1 } : p));
+    try {
+      const c = await addComment(postId, session.userId, text);
+      setComments((prev) => [...prev, c]);
+      setPost((p) => (p ? { ...p, commentCount: p.commentCount + 1 } : p));
+      requestAnimationFrame(() => commentsRef.current?.scrollToEnd({ animated: true }));
+    } catch (error: any) {
+      setDraft(text);
+      Alert.alert('Could not post comment', error?.message ?? 'Please try again.');
+    }
   };
 
   if (!post) return <View style={[styles.container, { backgroundColor: colors.bg }]} />;
@@ -55,6 +72,7 @@ export function PostDetailScreen({ route, navigation }: any) {
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <FlatList
+          ref={commentsRef}
           data={comments}
           keyExtractor={(c) => c.id}
           ListHeaderComponent={
@@ -62,7 +80,7 @@ export function PostDetailScreen({ route, navigation }: any) {
               post={post}
               onToggleLike={onLike}
               onToggleSave={onSave}
-              onPressComments={() => {}}
+              onPressComments={() => commentsRef.current?.scrollToEnd({ animated: true })}
               onPressProfile={(username) => navigation.navigate('Profile', { username })}
             />
           }

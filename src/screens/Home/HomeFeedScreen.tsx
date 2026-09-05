@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, RefreshControl, Text, Pressable, Image } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, RefreshControl, Text, Pressable, Image, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFeedStore } from '../../store/feedStore';
@@ -10,28 +10,50 @@ import { EmptyState } from '../../components/EmptyState';
 import { HeartIcon, PaperPlaneIcon } from '../../components/icons';
 import { useTheme } from '../../theme/useTheme';
 import { getActiveStoryGroups } from '../../db/repositories/storyRepository';
+import { getSuggestedAccounts, toggleFollow } from '../../db/repositories/userRepository';
+import { SuggestedAccounts, SuggestedAccountsHeader } from '../../components/SuggestedAccounts';
 import type { Post, StoryGroup } from '../../types';
+import type { Author } from '../../types';
 
 const AVG_ITEM_HEIGHT = 520;
 
 export function HomeFeedScreen({ navigation }: any) {
   const { colors } = useTheme();
   const session = useAuthStore((s) => s.session)!;
-  const { posts, loading, hasMore, load, loadMore, toggleLike, toggleSave } = useFeedStore();
+  const { posts, loading, error, hasMore, load, loadMore, toggleLike, toggleSave } = useFeedStore();
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
+  const [suggested, setSuggested] = useState<Author[]>([]);
+  const [followingUsername, setFollowingUsername] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadAll = useCallback(async () => {
-    await load(session.userId);
-    setStoryGroups(await getActiveStoryGroups(session.userId));
+    const [, stories, accounts] = await Promise.all([
+      load(session.userId),
+      getActiveStoryGroups(session.userId),
+      getSuggestedAccounts(session.userId, 8),
+    ]);
+    setStoryGroups(stories);
+    setSuggested(accounts);
   }, [load, session.userId]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadAll();
-    setRefreshing(false);
+    try { await loadAll(); } finally { setRefreshing(false); }
+  };
+
+  const followSuggestion = async (account: Author) => {
+    setFollowingUsername(account.username);
+    setSuggested((prev) => prev.filter((item) => item.id !== account.id));
+    try {
+      await toggleFollow(session.userId, account.id, true);
+    } catch (error: any) {
+      setSuggested((prev) => [account, ...prev]);
+      Alert.alert('Could not follow account', error?.message ?? 'Please try again.');
+    } finally {
+      setFollowingUsername(null);
+    }
   };
 
   const renderItem = useCallback(
@@ -75,14 +97,27 @@ export function HomeFeedScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         estimatedItemSize={AVG_ITEM_HEIGHT}
         ListHeaderComponent={
-          <StoryBar
-            groups={storyGroups}
-            myUserId={session.userId}
-            onPressGroup={(g) => navigation.navigate('StoryViewer', { groups: storyGroups, startIndex: storyGroups.findIndex((x) => x.authorId === g.authorId) })}
-            onPressAddStory={() => navigation.navigate('CreateStory')}
-          />
+          <View>
+            <StoryBar
+              groups={storyGroups}
+              myUserId={session.userId}
+              onPressGroup={(g) => navigation.navigate('StoryViewer', { groups: storyGroups, startIndex: storyGroups.findIndex((x) => x.authorId === g.authorId) })}
+              onPressAddStory={() => navigation.navigate('CreateStory')}
+            />
+            {suggested.length > 0 && (
+              <View>
+                <SuggestedAccountsHeader />
+                <SuggestedAccounts
+                  accounts={suggested}
+                  loadingUsername={followingUsername}
+                  onPressProfile={(username) => navigation.navigate('Profile', { username })}
+                  onFollow={followSuggestion}
+                />
+              </View>
+            )}
+          </View>
         }
-        ListEmptyComponent={<EmptyState icon="📸" title="Your feed is empty" subtitle="Follow a few accounts from Explore to see their posts here." />}
+        ListEmptyComponent={error ? <EmptyState icon="⚠️" title="Could not load your feed" subtitle="Pull down to try again." /> : <EmptyState icon="📸" title="Your feed is empty" subtitle="Follow a few accounts from Explore to see their posts here." />}
         ListFooterComponent={
           !hasMore && posts.length > 0 ? (
             <Text style={[styles.endOfFeed, { color: colors.textMuted }]}>You're all caught up ✓</Text>

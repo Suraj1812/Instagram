@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Switch } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { getProfileById, updateProfile } from '../../db/repositories/userRepository';
@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { Avatar } from '../../components/Avatar';
 import { Input } from '../../components/Input';
 import { useTheme } from '../../theme/useTheme';
+import { LoadingState } from '../../components/LoadingState';
 import type { UserProfile } from '../../types';
 
 export function EditProfileScreen({ navigation }: any) {
@@ -19,6 +20,7 @@ export function EditProfileScreen({ navigation }: any) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [avatarPath, setAvatarPath] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getProfileById(session.userId, session.userId).then((p) => {
@@ -28,26 +30,40 @@ export function EditProfileScreen({ navigation }: any) {
       setBio(p.bio ?? '');
       setIsPrivate(p.isPrivate);
       setAvatarPath(p.avatarPath);
-    });
+    }).catch((error: any) => {
+      Alert.alert('Could not load profile', error?.message ?? 'Please try again.');
+    }).finally(() => setLoading(false));
   }, [session.userId]);
 
   const pickAvatar = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1, aspect: [1, 1] });
-    if (result.canceled) return;
-    const path = await persistAvatar(result.assets[0].uri);
-    setAvatarPath(path);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Photo permission needed', 'Allow photo access to choose a profile picture.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1, aspect: [1, 1] });
+      if (result.canceled) return;
+      const path = await persistAvatar(result.assets[0].uri);
+      setAvatarPath(path);
+    } catch (error: any) {
+      Alert.alert('Could not update photo', error?.message ?? 'Please try again.');
+    }
   };
 
   const save = async () => {
     setSaving(true);
-    await updateProfile(session.userId, { displayName, bio, avatarPath, isPrivate });
-    setSaving(false);
-    navigation.goBack();
+    try {
+      await updateProfile(session.userId, { displayName: displayName.trim(), bio: bio.trim(), avatarPath, isPrivate });
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert('Could not save profile', error?.message ?? 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }}><LoadingState label={loading ? 'Loading your profile…' : 'Profile could not be loaded. Go back and try again.'} /></View>;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>

@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, Dimensions, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { getProfileByUsername, toggleFollow } from '../../db/repositories/userRepository';
@@ -11,6 +12,7 @@ import { LocalImage } from '../../components/LocalImage';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
 import { MenuIcon, ReelsIcon } from '../../components/icons';
+import { LoadingState } from '../../components/LoadingState';
 import { useTheme } from '../../theme/useTheme';
 import type { UserProfile, Post } from '../../types';
 
@@ -25,29 +27,48 @@ export function ProfileScreen({ route, navigation }: any) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [tab, setTab] = useState<'posts' | 'reels'>('posts');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const p = await getProfileByUsername(username, session.userId);
-    setProfile(p);
-    if (p) setPosts(await getUserPosts(session.userId, p.id, tab === 'reels'));
+    setLoading(true);
+    try {
+      const p = await getProfileByUsername(username, session.userId);
+      setProfile(p);
+      if (p) setPosts(await getUserPosts(session.userId, p.id, tab === 'reels'));
+      setLoadError(null);
+    } catch (error: any) {
+      setLoadError(error?.message ?? 'Could not load this profile.');
+    } finally { setLoading(false); }
   }, [username, session.userId, tab]);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => {
+    void load();
+  }, [load]));
 
   const onFollow = async () => {
     if (!profile) return;
     const next = !profile.isFollowedByMe;
     setProfile({ ...profile, isFollowedByMe: next, followersCount: profile.followersCount + (next ? 1 : -1) });
-    await toggleFollow(session.userId, profile.id, next);
+    try {
+      await toggleFollow(session.userId, profile.id, next);
+    } catch (error: any) {
+      setProfile({ ...profile, isFollowedByMe: !next, followersCount: profile.followersCount });
+      Alert.alert('Could not update follow', error?.message ?? 'Please try again.');
+    }
   };
 
   const onMessage = async () => {
     if (!profile) return;
-    const convoId = await getOrCreateDirectConversation(session.userId, profile.id);
-    navigation.navigate('Chat', { conversationId: convoId, title: profile.username });
+    try {
+      const convoId = await getOrCreateDirectConversation(session.userId, profile.id);
+      navigation.navigate('Chat', { conversationId: convoId, title: profile.username });
+    } catch (error: any) {
+      Alert.alert('Could not start message', error?.message ?? 'Please try again.');
+    }
   };
 
-  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  if (!profile) return <View style={{ flex: 1, backgroundColor: colors.bg }}>{loading ? <LoadingState label="Loading profile…" /> : <EmptyState icon="⚠️" title="Profile unavailable" subtitle={loadError ?? 'Try again in a moment.'} />}</View>;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>

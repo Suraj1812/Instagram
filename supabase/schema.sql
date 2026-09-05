@@ -314,7 +314,7 @@ begin
     return v_id;
   end if;
 
-  v_id := encode(gen_random_bytes(12), 'hex');
+  v_id := replace(gen_random_uuid()::text, '-', '');
   insert into public.conversations (id, is_group, updated_at) values (v_id, false, (extract(epoch from now()) * 1000)::bigint);
   insert into public.conversation_members (conversation_id, user_id) values (v_id, user_a), (v_id, user_b);
   return v_id;
@@ -367,13 +367,13 @@ begin
   limit 1;
 
   if v_convo_id is null then
-    v_convo_id := encode(gen_random_bytes(12), 'hex');
+    v_convo_id := replace(gen_random_uuid()::text, '-', '');
     insert into public.conversations (id, is_group, updated_at) values (v_convo_id, false, v_now);
     insert into public.conversation_members (conversation_id, user_id) values (v_convo_id, v_new_user), (v_convo_id, v_seed_id);
   end if;
 
   insert into public.messages (id, conversation_id, sender_id, body, created_at)
-  values (encode(gen_random_bytes(12), 'hex'), v_convo_id, v_seed_id, 'hey! welcome to SwiftGram 👋', v_now);
+  values (replace(gen_random_uuid()::text, '-', ''), v_convo_id, v_seed_id, 'hey! welcome to Instagram 👋', v_now);
 end;
 $$;
 

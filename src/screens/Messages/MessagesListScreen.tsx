@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getConversations } from '../../db/repositories/messageRepository';
@@ -9,14 +9,20 @@ import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { ChevronLeftIcon } from '../../components/icons';
 import { useTheme } from '../../theme/useTheme';
+import { LoadingState } from '../../components/LoadingState';
 import type { ConversationSummary } from '../../types';
 
 export function MessagesListScreen({ navigation }: any) {
   const { colors } = useTheme();
   const session = useAuthStore((s) => s.session)!;
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => setConversations(await getConversations(session.userId)), [session.userId]);
+  const load = useCallback(async () => {
+    try { setConversations(await getConversations(session.userId)); }
+    catch (error: any) { Alert.alert('Could not load messages', error?.message ?? 'Please try again.'); }
+    finally { setLoading(false); }
+  }, [session.userId]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
@@ -36,7 +42,7 @@ export function MessagesListScreen({ navigation }: any) {
         <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
         <View style={{ width: 22 }} />
       </View>
-      <FlatList
+      {loading ? <LoadingState label="Loading messages…" /> : <FlatList
         data={conversations}
         keyExtractor={(c) => c.id}
         ListEmptyComponent={<EmptyState icon="💬" title="No messages yet" subtitle="Message someone from their profile to start a conversation." />}
@@ -57,7 +63,7 @@ export function MessagesListScreen({ navigation }: any) {
             )}
           </Pressable>
         )}
-      />
+      />}
     </SafeAreaView>
   );
 }
