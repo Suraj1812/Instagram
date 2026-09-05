@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, Pressable, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, Pressable, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -27,6 +27,7 @@ export function LoginScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+        <Image source={require('../../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
         <Text style={[styles.logo, { color: colors.text }]}>SwiftGram</Text>
         <Text style={[styles.tagline, { color: colors.textMuted }]}>Log in to the account stored on this device</Text>
         <Input placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} style={styles.field} />
@@ -42,6 +43,7 @@ export function LoginScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  logoImage: { width: 88, height: 88, alignSelf: 'center', marginBottom: 16 },
   logo: { fontSize: 34, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
   tagline: { fontSize: 13, textAlign: 'center', marginBottom: 32 },
   field: { marginBottom: 12 },
